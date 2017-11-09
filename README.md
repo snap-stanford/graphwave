@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # GraphWave
 ## Spectral Wavelets for learning structural signatures in complex networks
 
