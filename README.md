@@ -28,33 +28,13 @@ GraphWave was written for __Python 2.7__ and requires the installation of the fo
 
 + __pygsp__: module for computing the wavelets (from the  [EPFL website](https://pygsp.readthedocs.io/en/stable/)  ). 
 To install, simply run in your local terminal:
-
-```
-$ pip install pygsp
-```
-
 + __networkx__: allows easy manipulation and plotting of graph objects (more information in the [Networkx website](https://networkx.github.io)).
-
-Installation can be done via pip or conda:
-
-```
-$ pip install networkx
-```
-
-or 
-
-```
-$ conda install networkx
-```
-
 + __pyemd__: module for computing Earth Mover distances (for trying out other distances between diffusion distributions. More information in the [pyemd website](https://github.com/wmayner/pyemd))
-Installation can also be done via pip by running:
 
-```
-$ pip install pyemd
-```
+Can install these using `pip install -r requirements.txt`
 
-+ __scipy, sklearn, seaborn__: for analyzing and plotting results
+Also, need standard packages: __scipy, sklearn, seaborn__ for analyzing and plotting results
+
 
 
 

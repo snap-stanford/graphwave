@@ -39,7 +39,7 @@ def graphwave(G, taus, t=range(0,100,2), type_graph="nx",verbose=False,**kwargs)
         taus=[0.5,0.7,0.8,0.9,1.0,1.1,1.3,1.5,1.7,1.9,2.0,2.1,2.3,2.5,2.7]+range(3,5)
         #### Compute the optimal embedding
         Gg=pygsp.graphs.Graph(nx.adjacency_matrix(G),lap_type='normalized')
-        Gg.compute_fourier_basis(force_recompute=True)
+        Gg.compute_fourier_basis(recompute=True)
         l1=np.where(Gg.e>0.1/Gg.N) ### safety check to ensure that the graph is indeed connected
         l1=Gg.e[l1[0][0]]
         smax=-np.log(0.90)*np.sqrt(Gg.e[-1]/l1)

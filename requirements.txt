@@ -1,0 +1,3 @@
+networkx==2.0
+pygsp==0.5.1
+pyemd==0.4.3
