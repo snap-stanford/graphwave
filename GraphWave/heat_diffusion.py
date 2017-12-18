@@ -63,7 +63,7 @@ def heat_diffusion(G,taus=[1, 10, 25, 50],diff_type="immediate",b=1,type_graph="
             ### centered around v and whic propagates through the network
             f=np.zeros(N)
             f[v]=1
-            Sf_vec = Hk.analysis(f) ### creates the associated heat wavelets
+            Sf_vec = Hk.analyze(f) ### creates the associated heat wavelets
             Sf = Sf_vec.reshape((Sf_vec.size/len(taus), len(taus)), order='F')
             for  i in range(len(taus)):
                 heat[i].iloc[:,v]=Sf[:,i] ### stores in different dataframes the results
