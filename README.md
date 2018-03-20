@@ -30,7 +30,6 @@ chmod 777 run.sh
 
 ```
 python main.py --n-chunks 16 --n-jobs 16 --inpath ./_data/synthetic/3200.edgelist --outpath ./_results/synthetic/3200
-
 ```
 
 

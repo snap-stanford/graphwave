@@ -3,4 +3,4 @@ plots/*
 .ipynb_checkpoints/*
 _data/*
 _results/*
-
+run2.sh
