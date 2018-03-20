@@ -1,3 +1,6 @@
 *pyc
 plots/*
 .ipynb_checkpoints/*
+_data/*
+_results/*
+
