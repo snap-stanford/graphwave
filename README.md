@@ -3,7 +3,7 @@
 
 基于多线程和GPU加速的 graphwave 实现方案。
 
-fork自[这里](https://github.com/snap-stanford/graphwave)，也可以参考origin 分支
+fork 自[这里](https://github.com/snap-stanford/graphwave)，也可以参考 origin 分支
 
 另外参考了[这里](https://github.com/bkj/graphwave)的实现
 
