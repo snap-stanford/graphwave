@@ -17,7 +17,7 @@ def Laplacian(A, norm=False):
         D = np.diag([np.sum(A[i, :]) for i in range(N)])
         L = D - A
     return L
-    
+
 
 def Degree_Matrix(A):
     N, _ =A.shape
@@ -37,7 +37,6 @@ def InvDegree_Matrix(A):
     return D
 
 
-  
 def plot_graph(G_nx, f, labels):
     ### plots a graph (of type nx) for the given signal strength f
     pos = nx.spring_layout(G_nx)
@@ -48,11 +47,12 @@ def plot_graph(G_nx, f, labels):
     labels = nx.draw_networkx_labels(G_nx, pos)
     return True
 
+
 def normalize_matrix(M, direction="row", type_norm="max"):
-	n, _ = M.shape
+    n, _ = M.shape
     if direction == "row":
         if type_norm == "max":
-        	D = [1.0 / np.max(M[i, :]) for i in range(n)]
+            D = [1.0 / np.max(M[i, :]) for i in range(n)]
         elif type_norm == "l2":
             D=[1.0 / np.linalg.norm(M[i, :]) for i in range(n)]
         elif type_norm == "l1":
@@ -68,5 +68,3 @@ def normalize_matrix(M, direction="row", type_norm="max"):
     else:
         print "direction not recognized. Defaulting to column"
         return normalize_matrix(M.T, direction="row", type_norm=type_norm)
-
-

@@ -51,5 +51,6 @@ def graphwave(G, taus, t=range(0, 100, 2), type_graph="nx", verbose=False, **kwa
     # Compute the heat wavelets
     heat_print = heat_diffusion(G, taus, diff_type="immediate",
                                 type_graph=type_graph)
-    chi = featurize_characteristic_function(heat_print, t) 
+    chi = featurize_characteristic_function(heat_print, t)
+    
     return chi, heat_print, taus
