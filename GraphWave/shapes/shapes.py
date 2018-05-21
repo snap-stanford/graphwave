@@ -359,9 +359,14 @@ def tree(start, nb_levels, regularity, role_start=0, plot=False):
     if plot is True: plot_networkx(graph, roles)
     return graph, roles
 
+
 def plot_networkx(graph, role_labels):
+        cmap = plt.get_cmap('hot')
+        x_range =  np.linspace(0,1,len(np.unique(role_labels)))
+        coloring = {u: cmap(x_range[i]) for i, u in enumerate(np.unique(role_labels))}
+        node_color = [coloring[role_labels[i]] for i in range(len(role_labels))]
         plt.figure()
         nx.draw_networkx(graph, pos = nx.layout.fruchterman_reingold_layout(graph),
-                         node_color=role_labels, cmap='hot')
+                         node_color=node_color , cmap='hot')
         plt.show()
-        return 
+        return

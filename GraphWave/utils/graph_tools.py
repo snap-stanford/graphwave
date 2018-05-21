@@ -7,64 +7,49 @@ import networkx as nx
 import numpy as np
 import seaborn as sb
 
-def Laplacian(A, norm=False):
-    N = A.shape[0]
-    D = np.diag([np.sum(A[i, :]) for i in range(N)])
+def laplacian(adj, norm=False):
+    n, _ = adj.shape
+    deg = np.diag([np.sum(adj[i, :]) for i in range(n)])
     if norm == True:
-        D = np.diag([1.0 / np.sqrt(np.sum(A[i, :]) ) for i in range(N)])
-        L = np.eye(N) - D.dot(A.dot(D))
+        deg = np.diag([1.0 / np.sqrt(np.sum(adj[i, :]) ) for i in range(n)])
+        lap = np.eye(n) - deg.dot(adj.dot(deg))
     else:
-        D = np.diag([np.sum(A[i, :]) for i in range(N)])
-        L = D - A
-    return L
+        deg = np.diag([np.sum(adj[i, :]) for i in range(n)])
+        lap = deg - adj
+    return lap
 
 
-def Degree_Matrix(A):
-    N, _ =A.shape
-    D = np.diag([np.sum(A[i, :]) for i in range(N)])
-    return D
-    
-def InvDegree_Matrix(A):
-    N, _ = A.shape
-    D_prov = np.array([np.sum(A[i, :]) for i in range(N)])
-    ### identify disconnected vertices
-    ind_zeros = [i for i in range(N) if D_prov[i] == 0]
-    np.put(D_prov, ind_zeros, 1)
-    D_prov[ind_zeros] = 1
-    D = np.array([1.0 / d for d in D_prov])
-    np.put(D, ind_zeros, 0)
-    D = np.diag(D)
-    return D
+def degree_matrix(adj):
+    n, _ =adj.shape
+    deg = np.diag([np.sum(adj[i, :]) for i in range(n)])
+    return deg
 
 
-def plot_graph(G_nx, f, labels):
-    ### plots a graph (of type nx) for the given signal strength f
-    pos = nx.spring_layout(G_nx)
-    nodes = nx.draw_networkx_nodes(G_nx,pos, node_color=f,
-                                   cmap="hot", label=labels)
-    edges = nx.draw_networkx_edges(G_nx, pos,
-                                   edge_color="black", width=4)
-    labels = nx.draw_networkx_labels(G_nx, pos)
-    return True
+def Invdegree_matrix(adj):
+    n, _ = adj.shape
+    pos = np.vectorize(lambda x: x if x > 0 else 1)
+    deg_prov = pos(np.array(adj.sum(0)))
+    deg = np.diag(1.0 / deg_prov)
+    return deg
 
 
-def normalize_matrix(M, direction="row", type_norm="max"):
-    n, _ = M.shape
+def normalize_matrix(m, direction="row", type_norm="max"):
+    n, _ = m.shape
     if direction == "row":
         if type_norm == "max":
-            D = [1.0 / np.max(M[i, :]) for i in range(n)]
+            deg = [1.0 / np.max(m[i, :]) for i in range(n)]
         elif type_norm == "l2":
-            D=[1.0 / np.linalg.norm(M[i, :]) for i in range(n)]
+            deg=[1.0 / np.linalg.norm(m[i, :]) for i in range(n)]
         elif type_norm == "l1":
-            D=[1.0 / np.sum(np.abs(M[i,:])) for i in range(n)]
+            deg=[1.0 / np.sum(np.abs(m[i,:])) for i in range(n)]
         else:
-            print "direction not recognized. Defaulting to l2"
-            D=[1.0 / np.linalg.norm(M[i, :]) for i in range(n)]
-        D = np.diag(D)
-        return D.dot(M)
+            print "direction not recognized. degefaulting to l2"
+            deg=[1.0 / np.linalg.norm(m[i, :]) for i in range(n)]
+        deg = np.diag(deg)
+        return deg.dot(m)
     elif direction == "column":
-        M_tilde = normalize_matrix(M.T, direction="row",type_norm=type_norm)
-        return M_tilde.T
+        m_tilde = normalize_matrix(m.T, direction="row", type_norm=type_norm)
+        return m_tilde.T
     else:
-        print "direction not recognized. Defaulting to column"
-        return normalize_matrix(M.T, direction="row", type_norm=type_norm)
+        print "direction not recognized. degefaulting to column"
+        return normalize_matrix(m.T, direction="row", type_norm=type_norm)

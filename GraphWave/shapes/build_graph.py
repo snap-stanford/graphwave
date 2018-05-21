@@ -11,7 +11,8 @@ from shapes import *
 
 
 def build_structure(width_basis, basis_type, list_shapes, start=0,
-                    add_random_edges=0, plot=False, savefig=False):
+                    rdm_basis_plugins =False, add_random_edges=0,
+                    plot=False, savefig=False):
     '''This function creates a basis (torus, string, or cycle) and attaches elements of 
     the type in the list randomly along the basis.
     Possibility to add random edges afterwards
@@ -21,6 +22,8 @@ def build_structure(width_basis, basis_type, list_shapes, start=0,
     basis_type       :      (torus, string, or cycle)
     shapes           :      list of shape list (1st arg: type of shape, next args: args for building the shape, except for the start)
     start            :      initial nb for the first node
+    rdm_basis_plugins:      boolean. Should the shapes be randomly placed
+                            along the basis (True) or regularly (False)?
     add_random_edges :      nb of edges to randomly add on the structure
     plot,savefig     :      plotting and saving parameters
     OUTPUT:
@@ -33,8 +36,11 @@ def build_structure(width_basis, basis_type, list_shapes, start=0,
     start  += n_basis   ### indicator of the id of the next node
     
     # Sample (with replacement) where to attach the new motives
-    plugins = np.random.choice(n_basis, n_shapes, replace=False)
-    print plugins
+    if random_basis_plugins is True:
+        plugins = np.random.choice(n_basis, n_shapes, replace=False)
+    else:
+        spacing = math.floor(width_basis / nb_shapes)
+        plugins = [k * spacing for k in range(nb_shapes)]
     communities = [0] * n_basis
     seen_shapes = {'Basis': [0, n_basis]}
     for p in plugins:
@@ -44,25 +50,24 @@ def build_structure(width_basis, basis_type, list_shapes, start=0,
         print shape_id, shape
         shape_type = shape[0]
         args = [start]
-        args += shape[1: ]
+        if len(shape)>1:
+            args += shape[1: ]
         args += [0]
         print(args)
-        S, roles = eval(shape_type)(*args)
-        n_s = nx.number_of_nodes(S)
+        graph_s, roles_graph_s = eval(shape_type)(*args)
+        n_s = nx.number_of_nodes(graph_s)
         try:
             col_start = seen_shapes[shape_type][0]
         except:
             col_start = np.max(role_id) + 1
             seen_shapes[shape_type] = [col_start, n_s]
-        roles += [r + col_start for r in roles]
-        print("type shape", shape_type, roles)
         # Attach the shape to the basis
-        Basis.add_nodes_from(S.nodes())
-        Basis.add_edges_from(S.edges())
+        Basis.add_nodes_from(graph_s.nodes())
+        Basis.add_edges_from(graph_s.edges())
         Basis.add_edges_from([(start,plugins[shape_id])])
         role_id[plugins[shape_id]] += (-2 - 10 * seen_shapes[shape_type][0])
         communities += [shape_id] * n_s
-        role_id += roles
+        role_id += [r + col_start for r in roles_graph_s]
         start += n_s
 
     if add_random_edges > 0:
@@ -72,261 +77,118 @@ def build_structure(width_basis, basis_type, list_shapes, start=0,
                                          2, replace=False)
             print src, dest
             Basis.add_edges_from([(src, dest)])
-    if plot is True:
-        cmap = plt.get_cmap('PuRd')
-        x_range = np.linspace(0, 1, len(np.unique(role_id)) + 1)
-        col = {lab: cmap(x_range[i]) for i, lab in enumerate(np.unique(role_id))}
-        col_list = [col[role_id[i]] for i in range(len(role_id))]
-        plt.figure()
-        nx.draw_networkx(Basis, node_color=col_list, cmap='PuRd')
-        plt.show()
-        if savefig is True: plt.savefig('plots/structure.png')
+    #if plot is True:
+    #    cmap = plt.get_cmap('PuRd')
+    #    x_range = np.linspace(0, 1, len(np.unique(role_id)) + 1)
+    #    col = {lab: cmap(x_range[i]) for i, lab in enumerate(np.unique(role_id))}
+    #    col_list = [col[role_id[i]] for i in range(len(role_id))]
+    #    plt.figure()
+    #    nx.draw_networkx(Basis, node_color=col_list, cmap='PuRd')
+    #    plt.show()
+    #    if savefig is True: plt.savefig('plots/structure.png')
+    if plot is True: plot_networkx(graph, role_id)
         
     return Basis, communities, plugins, role_id
 
 
-def build_regular_structure(width_basis, basis_type, nb_shapes, shape,
-                            start=0, add_random_edges=0, plot=False, savefig=True):
-    ''' This function creates a basis (torus, string, or cycle) and attaches elements of 
-    the type in the list regularly along the basis.
-    Possibility to add random edges afterwards
-    INPUT:
-    --------------------------------------------------------------------------------------
-    width_basis      :      width (in terms of number of nodes) of the basis
-    basis_type       :      (torus, string, or cycle)
-    shapes           :      list of shape list (1st arg: type of shape, next args: args for building the shape, except for the start)
-    start            :      initial nb for the first node
-    add_random_edges :      nb of edges to randomly add on the structure
-    plot,savefig     :      plotting and saving parameters
-    OUTPUT:
-    --------------------------------------------------------------------------------------
-    Basis            :       a nx graph with the particular shape
-    colors           :       labels for each role
-    '''
-    Basis, _ = eval(basis_type)(start, width_basis)
-    start += nx.number_of_nodes(Basis)
-    ### Sample (with replacement) where to attach the new motives
-    K = math.floor(width_basis / nb_shapes)
-    plugins = [k * K for k in range(nb_shapes)]
-    nb_shape = 0
-    colors = [1 if index in plugins else 0 
-              for index in range(nx.number_of_nodes(Basis)) ]
-    col_start = len(np.unique(colors))
-    for s in range(nb_shapes):
-        type_shape = shape[0]
-        args = [start]
-        if len(shape) > 1:
-            args += shape[1: ]
-        args += [col_start+1]
-        S, roles_shape = eval(type_shape)(*args)
-        # Attach the shape to the basis
-        Basis.add_nodes_from(S.nodes())
-        Basis.add_edges_from(S.edges())
-        Basis.add_edges_from([(start,plugins[nb_shape])])
-        colors += roles_shape
-        colors[start]-=1
-        start += nx.number_of_nodes(S)
-        nb_shape += 1
-    if add_random_edges > 0:
-        # add random edges between nodes:
-        for p in range(add_random_edges):
-            src, dest=np.random.choice(nx.number_of_nodes(Basis),
-                                       2, replace=False)
-            Basis.add_edges_from([(src, dest)])
-    if plot is True:
-        nx.draw_networkx(Basis, pos=nx.layout.fruchterman_reingold_layout(Basis),
-                         node_color=colors, cmap="PuRd")
-        if savefig is True:
-            plt.savefig("plots/regular_structure.png")
-    return Basis, colors
-
-
-def build_lego_structure(list_shapes, start=0, betweenness_density=2.5,
-                         plot=False, savefig=False, save2text=''):
-    '''This function creates a graph from a list of building blocks by adding edges between blocks.
-    INPUT:
-    ---------------------------------------------------------------------------------
-    list_shapes           :   list of shape list (1st arg: type of shape, next args: args for building the shape, except for the start)
-    betweenness_density   :   density of the backbone structure
-    start                 :   initial node nb 
-    plot, savefig,save2txt:   plotting and saving parameters
-   
-    OUTPUT:
-    ---------------------------------------------------------------------------------
-    G:                    :   a nx graph (associationg of cliques/motifs planted along backbone structure)
-    colors                :   motif nb (per individual motif)
-    index_roles           :   role id
-    label_shape           :   label/class of the motif
-    '''
-    G=nx.Graph()
-    
-    nb_shape = 0
-    colors = []         ## labels for the different shapes
-    seen_shapes = []
-    seen_colors_start = []  ## pointer for where should the next shape's labels be initialized
-    index_roles = []  ### roles in the network
-    col_start = 0
-    label_shape = []
-    for shape in list_shapes:
-        shape_type = shape[0]
-        if shape_type not in seen_shapes:
-            seen_shapes.append(shape_type)
-            seen_colors_start.append(np.max([0] + index_roles) + 1)
-            col_start = seen_colors_start[-1]
-            ind = len(seen_colors_start) - 1
-        else:
-            ind = seen_shapes.index(shape_type)
-            col_start = seen_colors_start[ind]
-        start = len(index_roles)
-        args = [start]
-        args += shape[1:]
-        args += [col_start]
-        S, roles = eval(shape_type)(*args)
-        ### Attach the shape to the basis
-        G.add_nodes_from(S.nodes())
-        G.add_edges_from(S.edges())
-        nb_shape += 1
-        colors += [nb_shape] * nx.number_of_nodes(S)
-        index_roles += roles
-        label_shape += [col_start] * nx.number_of_nodes(S)
-    print seen_shapes
-    ### Now we link the different shapes:
-    N = G.number_of_nodes()
-    A = np.ones((N, N))
-    np.fill_diagonal(A, 0)
-    for j in np.unique(colors):
-        ll = np.array([e==j for e in colors])
-        A[ll, :][:, ll]=0
-    ### Randomly select edges to put between shapes:
-        n = pymc.distributions.rtruncated_poisson(betweenness_density,1)[0]
-        start_k = np.array(range(N))[np.array(ll)]
-        idx, idy = np.nonzero(A[ll, :])
-        indices = np.random.choice(range(len(idx)), n)
-        G.add_edges_from([(1 + start_k[0] + idx[i], 1 + idy[i])
-                          for i in indices])
-    if plot is True:
-        nx.draw_networkx(G, node_color=index_roles, cmap="PuRd")
-        if savefig is True:
-            plt.savefig("plots/structure.png")
-    if len(save2text) > 0:
-        graph_list_rep = [['Id', 'shape_id', 'type_shape', 'role']]+\
-        [[i+1, colors[i], label_shape[i], index_roles[i]]
-         for i in range(nx.number_of_nodes(G))]
-        np.savetxt(save2text + "graph_nodes.txt", graph_list_rep, fmt='%s,%s,%s,%s')
-        elist = [['Source', 'Target']]+[[e[0], e[1]] for e in G.edges()]
-        np.savetxt(save2text+"graph_nodes.txt",graph_list_rep,fmt='%s,%s,%s,%s')
-        np.savetxt(save2text+"graph_edges.txt",elist,fmt='%s,%s')
-    return G, colors, index_roles, label_shape
-
-
-def build_lego_structure_from_structure(list_shapes, start=0,plot=False,savefig=False,graph_type='nx.connected_watts_strogatz_graph', graph_args=[4,0.4],save2text='',add_node=10):
-    '''same as before, except that the shapes are put on top of the spanning tree of a graph
-    instead of random edges
+def build_lego_structure(list_shapes, start=0, plot=False, savefig=False,
+                         bkbone_graph_type='nx.connected_watts_strogatz_graph',
+                         bkbone_graph_args=[4, 0.4], save2text='', add_node=10):
+    '''This function creates a graph from a list of building blocks on top of a backbone graph
      INPUT:
     ---------------------------------------------------------------------------------
-    list_shapes           :   list of shape list (1st arg: type of shape, next args: args for building the shape, except for the start)
-    graph_type            :   which type of backbone graph (default= 'nx.connected_watts_strogatz_graph')
-    add_nodes             :   number of "empty nodes" to add to the graph structures, ie, nodes in the graph that do not belong to a particular clique
-    graph_args            :   arguments for generating the backbone graph (except from nb of nodes)
+    list_shapes           :   list of shape list (1st arg: type of shape,
+                              next args: args for building the shape, except
+                              for the start)
+    bkbone_graph_type     :   which type of backbone graph
+                              (default= 'nx.connected_watts_strogatz_graph')
+    add_nodes             :   number of "empty nodes" to add to the graph structures, ie, 
+                              nodes in the graph that do not belong to a
+                              particular clique
+    bkbone_graph_args     :   arguments for generating the backbone graph 
+                              (except from nb of nodes, which
+                              is automatically computef)
     start                 :   initial node nb 
     plot, savefig,save2txt:   plotting and saving parameters
    
     OUTPUT:
     ---------------------------------------------------------------------------------
-    G:                    :   a nx graph (associationg of cliques/motifs planted along backbone structure)
-    colors                :   motif nb (per individual motif)
-    index_roles           :   role id
-    label_shape           :   label/class of the motif
+    graph                 :   a nx graph (association of cliques/motifs
+                              planted along a backbone structure)
+    communities           :   motif Id
+    role_labels           :   role id
+    label_shape           :   label/class of the motif. This induces different levels
+                              of similarities among motifs
     '''
-    G = nx.Graph()
-    
-    nb_shape = 0
-    colors = []         ## labels for the different shapes
-    seen_shapes = []
-    seen_colors_start = []  ## pointer for where should the next shape's labels be initialized
-    index_roles = []  ### roles in the network
+    graph = nx.Graph()
+    shape_id = [] # labels for the different shapes
+    role_labels = []         ## labels for the different shapes
+    communities = []  ### roles in the network
+    seen_shapes = {}
     col_start = 0
-    label_shape = []
     
-    for shape in list_shapes:
+    start = graph.number_of_nodes()
+    for nb_shape, shape in enumerate(list_shapes):
         shape_type = shape[0]
-        if shape_type not in seen_shapes:
-            seen_shapes.append(shape_type)
-            seen_colors_start.append(np.max([0] + index_roles)+1)
-            col_start = seen_colors_start[-1]
-            ind = len(seen_colors_start) - 1
-        else:
-            ind = seen_shapes.index(shape_type)
-            col_start = seen_colors_start[ind]
-        start = len(index_roles)
-        print 'start=', start
+        try: 
+             role_start, shape_id_start = seen_shapes[shape_type]
+        except:
+            if len(role_labels) > 0:
+                seen_shapes[shape_type]= [np.max(role_labels)+1, np.max(shape_id)+1]
+                role_start, shape_id_start = np.max(role_labels)+1, np.max(shape_id)+1
+            else:
+                seen_shapes[shape_type]= [0,0]
+                role_start, shape_id_start = 0,0
         args = [start]
         args += shape[1: ]
-        args += [col_start]
-        S, roles = eval(shape_type)(*args)
+        args += [role_start]
+        graph_s, roles = eval(shape_type)(*args)
         ### Attach the shape to the basis
-        G.add_nodes_from(S.nodes())
-        G.add_edges_from(S.edges())
+        graph.add_nodes_from(graph_s.nodes())
+        graph.add_edges_from(graph_s.edges())
         
-        colors += [nb_shape] * nx.number_of_nodes(S)
-        index_roles += roles
-        label_shape += [col_start] * nx.number_of_nodes(S)
-        nb_shape += 1
-    #print seen_shapes
-    ### Now we link the different shapes:
-    N = G.number_of_nodes()
-    N_prime = nb_shape
-    #### generate Graph
-    graph_args.insert(0, N_prime + add_node)
-    G.add_nodes_from(range(N, N + add_node))
-    colors += [nb_shape+rr for rr in range(add_node)]
-    #print colors
-    r = np.max(index_roles) + 1
-    l = label_shape[-1]
-    index_roles += [r] * add_node
-    label_shape += [-1] * add_node
-    Gg = eval(graph_type)(*graph_args)
-    elist = []
-    ### permute the colors:
-    initial_col = np.unique(colors)
-    perm = np.unique(colors)
-    np.random.shuffle(perm)
-    color_perm = {initial_col[i]: perm[i]
-                  for i in range(len(np.unique(colors)))}
-    colors2 = [color_perm[c] for c in colors]
-    for e in Gg.edges():
-        if e not in elist:
-            ii=np.random.choice(np.where(np.array(colors2) == (e[0]))[0], 1)[0]
-            jj=np.random.choice(np.where(np.array(colors2) == (e[1]))[0], 1)[0]
-            G.add_edges_from([(ii, jj)])
-            elist += [e]
-            elist += [(e[1], e[0])]
+        communities += [nb_shape] * nx.number_of_nodes(graph_s)
+        role_labels += roles
+        shape_id += [shape_id_start] * nx.number_of_nodes(graph_s)
+        start += graph_s.number_of_nodes()
+    ### Now we link the different shapes by attaching them to the underlyin
+    ### graph structure:
+    n_nodes, n_shapes = graph.number_of_nodes(), len(list_shapes)
+    graph.add_nodes_from(range(n_nodes, n_nodes + add_node))
+    role_labels += [n_shapes + 1] * add_node
+    communities += range(n_shapes, n_shapes + add_node)
+    shape_id += [-1] * add_node
+    
+    #### generate back_bone Graph
+    bkbone_graph_args.insert(0, n_shapes + add_node)
+    bkbone_graph = eval(bkbone_graph_type)(*bkbone_graph_args)
+    for e in bkbone_graph.edges():
+        ii=np.random.choice(np.where(np.array(communities) == e[0])[0], 1)[0]
+        jj=np.random.choice(np.where(np.array(communities) == e[1])[0], 1)[0]
+        graph.add_edges_from([(ii, jj)])
 
-    if plot is True:
-        nx.draw_networkx(G, node_color=index_roles, cmap="PuRd")
-        if savefig is True:
-            plt.savefig("plots/structure.png")
-    if len(save2text) > 0:
-        graph_list_rep = [['Id', 'shape_id', 'type_shape', 'role']]+\
-        [[i,colors[i], label_shape[i], index_roles[i]]
-          for i in range(nx.number_of_nodes(G))]
-        np.savetxt(save2text + "graph_nodes.txt",graph_list_rep,fmt='%s,%s,%s,%s')
-        elist=[['Source','Target']] + [[e[0], e[1]] for e in G.edges()]
-        np.savetxt(save2text+"graph_nodes.txt", graph_list_rep,fmt='%s,%s,%s,%s')
-        np.savetxt(save2text+"graph_edges.txt", elist,fmt='%s,%s')
-    return G, colors, index_roles, label_shape
+    if plot is True: plot_networkx(graph, role_labels)
+    if len(save2text) > 0: saveNet2txt(graph, colors=role_labels, name='net', path=save2text)
+    return graph, communities, role_labels, shape_id
 
 
-def create_bigger_network(nb_cells, width_cell,list_shapes,cell_type="cycle"):
-    #### Automatically creates a big network
-    G,colors,plugins=build_structure(width_basis,basis_type,list_shapes, start=0,add_random_edges=0,plot=False)
-    start=G.number_of_nodes()    
+def create_bigger_network(nb_cells, width_cell,list_shapes,
+                          rdm_basis_plugins=True, cell_type="cycle"):
+    ''' Automatically creates a big network by linking several instances of a
+    graph created by build_structure(width_basis, basis_type, list_shapes,..)
+    '''
+    graph, roles, plugins = build_structure(width_basis, basis_type, list_shapes, start=0,
+                                             rdm_basis_plugins=rdm_basis_plugins,
+                                             add_random_edges=0, plot=False)
+    start = graph.number_of_nodes()
     for i in range(1, nb_cells):
-        Gi,colors_i,plugins_i=build_structure(width_basis,basis_type,list_shapes, start=start,add_random_edges=0,plot=False)
-        G.add_nodes_from(Gi.nodes())
-        G.add_edges_from(Gi.edges())
-        G.add_edges_from([(start,start+1)])
-        start+=Gi.number_of_nodes() 
-        colors+=colors_i
-        plugins+=plugins_i
-    return G,colors,plugins
+        graph_i, roles_i, plugins_i = build_structure(width_basis, basis_type,
+                                                      list_shapes, start=start,
+                                                      add_random_edges=0, plot=False)
+        graph.add_nodes_from(graph_i.nodes())
+        graph.add_edges_from(graph_i.edges())
+        graph.add_edges_from([(start, start + 1)])
+        start += graph_i.number_of_nodes() 
+        roles += roles_i
+        plugins += plugins_i
+    return graph, roles, plugins
