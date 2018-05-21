@@ -28,11 +28,11 @@ def build_structure(width_basis, basis_type, list_shapes, start=0,
     plot,savefig     :      plotting and saving parameters
     OUTPUT:
     --------------------------------------------------------------------------------------
-    Basis            :       a nx graph with the particular shape
+    basis            :       a nx graph with the particular shape
     colors           :       labels for each role
     '''
-    Basis, role_id = eval(basis_type)(start, width_basis)
-    n_basis, n_shapes = nx.number_of_nodes(Basis), len(list_shapes)
+    basis, role_id = eval(basis_type)(start, width_basis)
+    n_basis, n_shapes = nx.number_of_nodes(basis), len(list_shapes)
     start  += n_basis   ### indicator of the id of the next node
     
     # Sample (with replacement) where to attach the new motives
@@ -42,7 +42,7 @@ def build_structure(width_basis, basis_type, list_shapes, start=0,
         spacing = math.floor(width_basis / nb_shapes)
         plugins = [k * spacing for k in range(nb_shapes)]
     communities = [0] * n_basis
-    seen_shapes = {'Basis': [0, n_basis]}
+    seen_shapes = {'basis': [0, n_basis]}
     for p in plugins:
         role_id[p] += 1
 
@@ -62,9 +62,9 @@ def build_structure(width_basis, basis_type, list_shapes, start=0,
             col_start = np.max(role_id) + 1
             seen_shapes[shape_type] = [col_start, n_s]
         # Attach the shape to the basis
-        Basis.add_nodes_from(graph_s.nodes())
-        Basis.add_edges_from(graph_s.edges())
-        Basis.add_edges_from([(start,plugins[shape_id])])
+        basis.add_nodes_from(graph_s.nodes())
+        basis.add_edges_from(graph_s.edges())
+        basis.add_edges_from([(start,plugins[shape_id])])
         role_id[plugins[shape_id]] += (-2 - 10 * seen_shapes[shape_type][0])
         communities += [shape_id] * n_s
         role_id += [r + col_start for r in roles_graph_s]
@@ -73,22 +73,13 @@ def build_structure(width_basis, basis_type, list_shapes, start=0,
     if add_random_edges > 0:
         ## add random edges between nodes:
         for p in range(add_random_edges):
-            src, dest = np.random.choice(nx.number_of_nodes(Basis),
+            src, dest = np.random.choice(nx.number_of_nodes(basis),
                                          2, replace=False)
             print src, dest
-            Basis.add_edges_from([(src, dest)])
-    #if plot is True:
-    #    cmap = plt.get_cmap('PuRd')
-    #    x_range = np.linspace(0, 1, len(np.unique(role_id)) + 1)
-    #    col = {lab: cmap(x_range[i]) for i, lab in enumerate(np.unique(role_id))}
-    #    col_list = [col[role_id[i]] for i in range(len(role_id))]
-    #    plt.figure()
-    #    nx.draw_networkx(Basis, node_color=col_list, cmap='PuRd')
-    #    plt.show()
-    #    if savefig is True: plt.savefig('plots/structure.png')
+            basis.add_edges_from([(src, dest)])
     if plot is True: plot_networkx(graph, role_id)
         
-    return Basis, communities, plugins, role_id
+    return basis, communities, plugins, role_id
 
 
 def build_lego_structure(list_shapes, start=0, plot=False, savefig=False,
