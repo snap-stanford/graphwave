@@ -4,99 +4,54 @@ This file contains the script for defining characteristic functions
 and using them as a way to embed distributional information
 in Euclidean space
 """
-from heat_diffusion import *
+import cmath
 import math
 import matplotlib.pyplot as plt
 import numpy as np
-import networkx as nx
-import pandas as pd
 import seaborn as sb
 
 
-def characteristic_function(sig, t, plot=False):
-    ''' function for computing the characteristic function
+def characteristic_function(sig, time_pnts, plot=False):
+    '''
+    function for computing the characteristic function
     associated to a signal at a point/ set of points t:
-            f(sig,t)=1/len(sig)* [sum_{s in sig} exp(i*t*s)]
+    $$   f(sig,t)=1/len(sig)* [sum_{s in sig} exp(i*t*s)] $$
     INPUT:
     ===========================================================================
-    sig   :      signal over the graph (vector of coefficients)
-    t     :      values at which the char. function should be evaluated
-    plot  :      boolean: should the resulting set of points be plotted?
+    sig           :      signal over the graph (vector of coefficients)
+    time_pnts     :      values at which the char. function should be evaluated
+    plot          :      boolean: should the resulting set
+                         of points be plotted?
 
     OUTPUT:
     ===========================================================================
-    f     :      empirical characteristic function
+    f             :      empirical characteristic function. Array of
+                         size of len(t) * 3 (col1: t, col2: Re[phi(t)],
+                         col3: Im[phi(t)])
     '''
-    f = np.zeros((len(t), 3))
-    if type(t) is list:
-        f = np.zeros((len(t), 3))
-        f[0, :] = [0, 1, 0]
-        vec1 = [np.exp(complex(0, sig[i])) for i in range(len(sig))]
-        for tt in range(1, len(t)):
-            f[tt, 0] = t[tt]
-            vec = [x**t[tt] for x in vec1]
-            c = np.mean(vec)
-            f[tt, 1] = c.real
-            f[tt, 2] = c.imag
-        if plot is True:
-            plt.figure()
-            plt.plot(f[:, 1], f[:, 2])
-            plt.title("characteristic function of the distribution")
-    else:
-        c = np.mean([np.exp(complex(0, t * sig[i])) for i in range(len(sig))])
-        f = [t, np.real(c), np.imag(c)]
+    time_pnts = list(time_pnts)
+    n_time_pnts = len(time_pnts)
+    f = np.zeros((n_time_pnts, 3))
+    f[0, :] = [0, 1, 0]
+    vec1 = np.array([np.exp(complex(0, sig[i])) for i in range(len(sig))])
+    for tt in range(1, n_time_pnts):
+        f[tt, 0] = time_pnts[tt]
+        vec = [x**time_pnts[tt] for x in vec1]
+        c = np.mean(vec)
+        f[tt, 1] = c.real
+        f[tt, 2] = c.imag
+    if plot is True:
+        plt.figure()
+        plt.plot(f[:, 1], f[:, 2])
+        plt.title('characteristic function of the distribution')
     return f
 
 
-def chi_vary_scale(G, taus=range(1, 50, 5), t=5, type_graph="nx", plot=True,
-                   plot_node=range(0, 5, 1), savefig=False,
-                   filefig="plots/plot_scale.png"):
-    ''' function for computing the characteristic function associated to a signal at
-        a point/ set of points t:
-        f(sig,t)=1/len(sig)* [sum_{s in sig} exp(i*t*s)]
-        INPUT:
-        ===========================================================================
-        G              :    Graph (nx)
-        taus           :    list of relevent scales
-        t              :    values at which the char. function should be evaluated
-        plot           :    boolean: should the resulting point/set of points be plotted
-        plot_node      :    list of nodes for which we want to plot the char. function
-        savefig,filefig:    saves the plots to a particular location
-
-        OUTPUT:
-        ===========================================================================
-        phi_s          :    dictionary: each key corresponds to a node and each associated
-                            value is a vector of length 2*len(taus), containing the
-                            concatenated real and imaginary values of the characteristic
-                            function for the different values of taus
-    '''
-    heat_print = heat_diffusion(G, taus=taus, type_graph=type_graph)
-    phi_s = {i: np.zeros(2 * len(taus))
-             for i in range(nx.number_of_nodes(G))}
-    for tau in range(len(taus)):
-        sig = heat_print[tau]
-        for i in range(sig.shape[1]):
-            s = sig.iloc[:, i].tolist()
-            c = characteristic_function(s, t, plot=False)
-            # Concatenate all the features into one big vector
-            phi_s[i][2 * tau: 2 * (tau + 1)] = c[1:]
-    if plot is True:
-        plt.figure()
-        cmap = plt.cm.get_cmap('RdYlBu')
-        for n in plot_node:
-            x = [phi_s[n][2 * j] for j in range(len(taus))]
-            y = [phi_s[n][2 * j + 1] for j in range(len(taus))]
-            plt.scatter(x, y, c=cmap(n), label="node " + str(n), cmap=cmap)
-        plt.legend(loc="upper left")
-        plt.title("characteristic function of the distribution as s varies")
-    return phi_s
-
-
-def plot_variation_scale(phi_s, bunch, taus):
+def plot_characteristic_function(phi_s, bunch, time_pnts, ind_tau):
     ''' simple function for plotting the variation that is induced
         INPUT:
         ===========================================================================
-        phi_s   :    dictionary: each node is a key,
+        phi_s   :    array: each node is a row,
                      and the entries are the concatenated Re/Im values of
                      the characteristic function for the different
                      values in taus (output of chi_vary_scale)
@@ -109,19 +64,23 @@ def plot_variation_scale(phi_s, bunch, taus):
         ===========================================================================
         None
     '''
+    sb.set_style('white')
     plt.figure()
+    n_time_pnts = len(time_pnts)
     cmap = plt.cm.get_cmap('RdYlBu')
     for n in bunch:
-            x = [phi_s[n][2 * j] for j in range(len(taus))]
-            y = [phi_s[n][2 * j + 1] for j in range(len(taus))]
+            x = [phi_s[n, ind_tau * n_time_pnts + 2 * j]
+                 for j in range(n_time_pnts)]
+            y = [phi_s[n, ind_tau * n_time_pnts + 2 * j + 1]
+                 for j in range(n_time_pnts)]
             plt.scatter(x, y, c=cmap(n), label="node "+str(n), cmap=cmap)
-    plt.legend(loc="upper left")
-    plt.title("characteristic function of the distribution as s varies")
+    plt.legend(loc='upper left')
+    plt.title('characteristic function of the distribution as s varies')
     plt.show()
     return
 
 
-def plot_angle_chi(f, t=[], savefig=False, filefig="plots/angle_chi.png"):
+def plot_angle_chi(f, t=[], savefig=False, filefig='plots/angle_chi.png'):
     '''Plots the evolution of the angle of a 2D paramteric curve with time
     Parameters
     ----------
@@ -139,45 +98,9 @@ def plot_angle_chi(f, t=[], savefig=False, filefig="plots/angle_chi.png"):
     return theta
 
 
-def sample_characteristic_function(f):
-    return "not implemented yet"
-
-
-
-def featurize_characteristic_function_selected_mode(heat_print, mode, t=[]):
-    '''uses the heat print as input to produce a feature vector
-    for the distribution for a selected mode
-    INPUT:
-    ===========================================================================
-    heat_print       : dictionary: each key is a mode/scale,
-                       and the entry is the dataframe of the diffusion
-                       coefficients at each node associated to that mode
-    mode             : (value  of) the selected scale of interest
-    t (optional)     : evaluation points of the characteristic function
-
-    OUTPUT:
-    ===========================================================================
-    feature vector   : pd.DataFrame: each row corresponds to the characteristic
-                       function evaluated at point(s) t for a given node
-    '''
-    if len(t) == 0:
-        t = range(0, 100, 5)
-        t += range(85, 100)
-        t.sort()
-        t = np.unique(t)
-        t = t.tolist()
-    chi = np.empty((heat_print[mode].shape[0], 2 * len(t)))
-    sig = heat_print[mode]
-    for i in range(sig.shape[1]):
-        s = sig.iloc[:, i].tolist()
-        c = characteristic_function(s, t, plot=False)
-        # Concatenate all the features into one big vector
-        chi[i, :] = np.reshape(c[:, 1:], [1, 2 * len(t)])
-    return chi
-
-
 def featurize_characteristic_function(heat_print, t=[], nodes=[]):
-    ''' same function as above, except the coefficient is computed across
+    '''
+    same function as above, except the coefficient is computed across
     all scales and concatenated in the feature vector
     Parameters
     ----------
@@ -190,21 +113,25 @@ def featurize_characteristic_function(heat_print, t=[], nodes=[]):
     -------
     chi        :            feature matrix (pd DataFrame)
     '''
+    n_filters, n_nodes, _ = heat_print.shape
     if len(t) == 0:
         t = range(0, 100, 5)
         t += range(85, 100)
         t.sort()
         t = np.unique(t)
         t = t.tolist()
+    n_time_pnts = len(t)
     if len(nodes) == 0:
-        nodes = range(heat_print[0].shape[0])
-    chi = np.empty((len(nodes), 2 * len(t) * len(heat_print)))
-    for tau in range(len(heat_print)):
-        sig = heat_print[tau]
+        nodes = range(n_nodes)
+    chi = np.empty((n_nodes, 2 * n_time_pnts * n_filters))
+    for tau in range(n_filters):
+        sig = heat_print[tau, :, :]
         for i in range(len(nodes)):
             ind = nodes[i]
-            s = sig.iloc[:, ind].tolist()
+            s = sig[:, ind].tolist()
             c = characteristic_function(s, t, plot=False)
             # Concatenate all the features into one big vector
-            chi[i, tau * 2 * len(t): (tau + 1) * 2 * len(t)] = np.reshape(c[:, 1:], [1, 2 * len(t)])
+            index_update = range(tau * 2 * n_time_pnts,
+                                 (tau + 1) * 2 * n_time_pnts)
+            chi[i, index_update] = np.reshape(c[:, 1:], [1, 2 * n_time_pnts])
     return chi

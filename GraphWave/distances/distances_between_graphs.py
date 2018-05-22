@@ -12,54 +12,47 @@ import matplotlib.pyplot as plt
 import seaborn as sb
 import sys,os
 
-from GraphWave import shapes
-from GraphWave.shapes import *
-from GraphWave.heat_diffusion import *
-from GraphWave.utils.graph_tools import *
-from GraphWave.distances.distances_signature import *
+from graphwave import shapes
+from graphwave.shapes import *
+from graphwave.heat_diffusion import *
+from graphwave.utils.graph_tools import *
+from graphwave.distances.distances_signature import *
 from pyemd import emd
 import scipy as sc
-from GraphWave.characteristic_functions import *
-### Define distances between graphs using the wavelets/diffusion profiles:
+from graphwave.characteristic_functions import *
 
 
-
-def distances(G1,G2,type_graphs,type_comp="auc",taus=[1, 10, 25, 50],normalize=True,mode_diff="agg",plot=False,savefig=False,filefig="plots/change_graph.png"):
+def distances(chi1, chi2, type_comp='auc', taus=[1, 10, 25, 50],
+              normalize=True, plot=False, savefig=False,
+              filefig='plots/change_graph.png'):
     '''
-    Compare two graphs based on their diffusion properties: assumes that the nodes are identified
+     Compare two graphs based on their diffusion properties: assumes that the nodes are identified
      INPUT:
      ======================================================
-     G1,G2: two graphs of type either nx or pygsp
-     type_graph: array specifying each graph's type  ("nx" or "pygsp")
-     type_comp: the distances between distributions that should be used (default: auc)
-     taus: the scales used for heat diffusion propoagation
-     plot, savefig,filefig: additional parameters (for plotting and saving plot results)
+     chi1, chi2           :     two graphs of type either nx or pygsp
+     type_comp            :     the distances between distributions 
+                                that should be used (default: auc)
+     taus                 :     the scales used for heat diffusion propoagation
+     plot, savefig,filefig:     additional parameters (for plotting and saving plots)
      OUTPUT:
      ======================================================
-     D_12: distances between diffusion distribution at different scales
-     heat_print1, heat_print2: the heat prints for the two graphs (array of diffusion distributions)
+     distance             :      distances between diffusion distribution at different scales
     '''
-    if type_graphs[0]=="nx":
-        n=G1.number_of_nodes()
-    elif type_graphs[0]=="nx":
-        n=G1.N
-    else:
-        print "type graph not recognized. Abort mission"
-        return 0
-    M=len(taus)
-    heat_print1=heat_diffusion(G1,taus=taus,type_graph=type_graphs[0])
-    heat_print2=heat_diffusion(G2,taus=taus,type_graph=type_graphs[1])
-    D_12= np.zeros((M,n))
-    for m in range(M):
-        for i in range(n):
-            if type_comp=="corr":
-                D_12[m,i]=1-1.0/(np.linalg.norm((heat_print1[m]).iloc[:,i])*np.linalg.norm((heat_print2[m]).iloc[:,i]))*((heat_print1[m]).iloc[:,i]).dot((heat_print2[m]).iloc[:,i])
-            elif type_comp=="auc":
-                D_12[m,i]=abs(compute_evolution_heat_diff(i,m, heat_print1,heat_print2,mode_diff=mode_diff))
+    n_nodes, dim_embed = heat_print1.shape
+    n_filters = len(taus)
+    level_size = dim_embed / n_filters
+    distances= np.zeros((n_filters,n))
+    for m in range(n_filters):
+        index_scale = range(m * level_size, (m + 1) * level_size)
+        for i in range(n_nodes):
+            if type_comp == "corr":
+                distances[m,i] = 1 - np.corrcoeff(chi1[i, index_scale], chi2[i, index_scale])
+            elif type_comp == "auc":
+                distances[m,i] = abs(compute_evolution_heat_diff(i,m, heat_print1,heat_print2,mode_diff=mode_diff))
             elif type_comp=="emd":
-         ### Required params:  
-         ### P,Q - Two histograms of size H
-         ### D - The HxH matrix of the ground distance between bins of P and Q
+                ### Required params:  
+                ### P,Q - Two histograms of size H
+                ### D - The HxH matrix of the ground distance between bins of P and Q
                 H=30
                 hist1,bins_arr=np.histogram(heat_print1[m],H)
                 #### Normalize histogram
@@ -74,98 +67,20 @@ def distances(G1,G2,type_graphs,type_comp="auc",taus=[1, 10, 25, 50],normalize=T
                     for j in range(H):
                         D[i,j]=np.abs(bins_arr[i+1]-bins_arr[j+1])
         
-                D_12[m,i]=emd(np.array(hist1.tolist()[0]),np.array(hist2.tolist()[0]),D)
+                distances[m, i] = emd(np.array(hist1.tolist()[0]),
+                                      np.array(hist2.tolist()[0]),D)
             else:
-                 print "comparison type not implemented"
+                 print 'comparison type not implemented'
                  return np.nan
     if plot==True:
         plt.figure()
-        sb.heatmap(D_12,cmap="hot")
+        sb.heatmap(distances,cmap="hot")
         if savefig==True:
             plt.savefig(filefig)
-    agg_score=np.sum(D_12)
-    return D_12,agg_score,heat_print1,heat_print2
+    agg_score=np.sum(distances)
+    return distances, agg_score
 
 
-
-
-    
-def distances_heatprints(heat_print1,heat_print2,type_comp="auc",mode_diff="agg",plot=False,savefig=False,filefig="plots/change_graph.png"):
-    ''' Compare two heat signatures 
-     INPUT:
-     ======================================================
-     heat_print1,heat_print2: two heat_prints 
-     type_comp: the distances between distributions that should be used (default: auc)
-     taus: the scales used for heat diffusion propoagation
-     plot, savefig,filefig: additional parameters (for plotting and saving plot results)
-     OUTPUT:
-     ======================================================
-     D_12: distances between diffusion distribution at different scales
-     heat_print1, heat_print2: the heat prints for the two graphs (array of diffusion distributions)
-     '''
-     
-    taus=[1, 10, 25, 50]
-    n=(heat_print1[0]).shape[1]
-    M=len(heat_print1)
-    D_12= np.zeros((M,n))
-    for m in range(M):
-        for i in range(n):
-            if type_comp=="corr":
-                D_12[m,i]=1-1.0/(np.linalg.norm((heat_print1[m]).iloc[:,i])*np.linalg.norm((heat_print2[m]).iloc[:,i]))*((heat_print1[m]).iloc[:,i]).dot((heat_print2[m]).iloc[:,i])
-            elif type_comp=="auc":
-                D_12[m,i]=abs(compute_evolution_heat_diff(i,m, heat_print1,heat_print2,mode_diff=mode_diff))
-            elif type_comp=="emd":
-         ### Required params:  
-         ### P,Q - Two histograms of size H
-         ### D - The HxH matrix of the ground distance between bins of P and Q
-                H=30
-                hist1,bins_arr=np.histogram(heat_print1[m],H)
-                #### Normalize histogram
-                w=[bins_arr[i+1]-bins_arr[i] for i in range(len(bins_arr)-1)]
-                hist1=hist1*1.0/np.matrix(w).dot(hist1)
-                hist2,_=np.histogram(heat_print2[m],bins_arr)
-                hist2=hist2*1.0/np.matrix(w).dot(hist2)
-                hist1=np.reshape(np.matrix(hist1), [1, H])
-                hist2=np.reshape(np.matrix(hist2), [1, H])
-                D=np.zeros((H,H))
-                for i in range(H):
-                    for j in range(H):
-                        D[i,j]=np.abs(bins_arr[i+1]-bins_arr[j+1])
-        
-                D_12[m,i]=emd(np.array(hist1.tolist()[0]),np.array(hist2.tolist()[0]),D)
-            else:
-                 print "comparison type not implemented"
-                 return np.nan
-    if plot==True:
-        plt.figure()
-        sb.heatmap(D_12,cmap="hot")
-        if savefig==True:
-            plt.savefig(filefig)
-    agg_score=np.sum(D_12)
-    return D_12,agg_score
-    
-    
-def distances_heatprints_mode(heat_print1,heat_print2,m=2,type_comp="auc",mode_diff="agg",plot=False,savefig=False,filefig="plots/change_graph.png"):
-    ### same as distances_heatprints, but only for the specified mode m
-    n=(heat_print1[0]).shape[1]
-    M=len(heat_print1)
-    D_12= np.zeros(n)
-    for i in range(n):
-        if type_comp=="corr":
-            D_12[i]=1-1.0/(np.linalg.norm((heat_print1[m]).iloc[:,i])*np.linalg.norm((heat_print2[m]).iloc[:,i]))*((heat_print1[m]).iloc[:,i]).dot((heat_print2[m]).iloc[:,i])
-        elif type_comp=="auc":
-            D_12[i]=abs(compute_evolution_heat_diff(i,m, heat_print1,heat_print2,mode_diff=mode_diff))
-        else:
-             print "comparison type not implemented"
-             return 0
-    if plot==True:
-        plt.figure()
-        sb.heatmap(D_12,cmap="hot")
-        if savefig==True:
-            plt.savefig(filefig)
-    agg_score=np.sum(D_12)
-    return D_12,agg_score
-            
 def distances_between_nodes(heat_print,mode,node1,node2,type_comp="auc",mode_diff="agg",normalize="True",plot=False,savefig=False,filefig="plots/nodes_dist.png"):
     ### Computes the distance between two nodes for the same graph/ based on their heat profiles
     if type_comp=="auc":
@@ -264,10 +179,10 @@ def distances_between_distributions(sig1,sig2,type_comp="auc",mode_diff="agg",no
 
 
 def test_distances():
-    G1,colors1=build_regular_structure(16,"cycle", 4,["fan", 3], start=0,add_random_edges=0,plot=True)
-    G2,colors2=build_regular_structure(16,"cycle", 4,["fan", 3], start=0,add_random_edges=0,plot=True)    
-    G2.remove_edge(25,26)
-    D_12,heat_print1,heat_print2=distances(G1,G2,type_graphs,plot=True,savefig=True)
+    graph_1,colors1=build_regular_structure(16,"cycle", 4,["fan", 3], start=0,add_random_edges=0,plot=True)
+    graph_2,colors2=build_regular_structure(16,"cycle", 4,["fan", 3], start=0,add_random_edges=0,plot=True)    
+    graph_2.remove_edge(25,26)
+    D_12,heat_print1,heat_print2=distances(graph_1,graph_2,type_graphs,plot=True,savefig=True)
 
 
 def distance(list_heat_df,type_comp="auc",normalize=True,mode_diff="agg"):
@@ -336,12 +251,12 @@ def cross_distances(list_heat_df,list_heat_df2,type_comp="auc",normalize=True,mo
 
 
 
-def compare_graph_chi(rep_G1,rep_G2, taus,t=[],type_comp="global",type_rep="graph",type_graph=["nx","nx"],plot=True, savefig=False,filefig='plots/graph1vs2.pdf'):
+def compare_graph_chi(rep_graph_1,rep_graph_2, taus,t=[],type_comp="global",type_rep="graph",type_graph=["nx","nx"],plot=True, savefig=False,filefig='plots/graph1vs2.pdf'):
     ''' Compares characteristic function representation of the graphs
     
     Parameters:
     =================================================================
-    rep_G1,rep_G2:      representations of the graphs (either the graphs, their heat wavelets or the featurized characteristic function)
+    rep_graph_1,rep_graph_2:      representations of the graphs (either the graphs, their heat wavelets or the featurized characteristic function)
     taus:               scale parameters to retain (if we want to featurize the representation)
     t:                  sampling points for evaluating the 2D characteristic curve
     type_comp:          type of comparison to achieve: either local (at the node level) or global (graph level)
@@ -358,16 +273,16 @@ def compare_graph_chi(rep_G1,rep_G2, taus,t=[],type_comp="global",type_rep="grap
     
     
     if type_rep=="graph":
-        heat_print1=heat_diffusion(rep_G1,taus=taus,type_graph=type_graph[0],diff_type="heat",b=0)
-        heat_print2=heat_diffusion(rep_G2,taus=taus,type_graph=type_graph[1],diff_type="heat",b=0)
+        heat_print1=heat_diffusion(rep_graph_1,taus=taus,type_graph=type_graph[0],diff_type="heat",b=0)
+        heat_print2=heat_diffusion(rep_graph_2,taus=taus,type_graph=type_graph[1],diff_type="heat",b=0)
         chi1=featurize_characteristic_function(heat_print1,t=t)
         chi2=featurize_characteristic_function(heat_print2,t=t)
     elif type_rep=="heat_print":
-        chi1=featurize_characteristic_function(rep_G1,t=t)
-        chi2=featurize_characteristic_function(rep_G2,t=t)
+        chi1=featurize_characteristic_function(rep_graph_1,t=t)
+        chi2=featurize_characteristic_function(rep_graph_2,t=t)
     elif type_rep=="chi":
-        chi1=rep_G1
-        chi2=rep_G2
+        chi1=rep_graph_1
+        chi2=rep_graph_2
     else:
         print "type representation is not recognized"
         return False
@@ -405,24 +320,3 @@ def compare_graph_chi(rep_G1,rep_G2, taus,t=[],type_comp="global",type_rep="grap
         print "comparison type is not recognized"
         d=np.nan
     return d
-
-
-def chi_distance_aligned_graph(nodes_names1,nodes_names2,chi1,chi2,nb_t=30):
-    intersect=np.intersect1d(nodes_names1,nodes_names2)
-    diff1=np.setdiff1d(nodes_names1,nodes_names2)
-    diff2=np.setdiff1d(nodes_names2,nodes_names1)
-    d=0
-    for i in range(len(intersect)):
-        ind1=nodes_names1.index(intersect[i])
-        ind2=nodes_names2.index(intersect[i])
-        d+=np.log(np.linalg.norm(chi1[ind1,:]-chi2[ind2,:]))
-    for i in range(len(diff1)):
-        ind1=nodes_names1.index(diff1[i])
-        d+=np.log(np.linalg.norm(chi1[ind1,:]))
-    for i in range(len(diff2)):
-        ind2=nodes_names2.index(diff2[i])
-        d+=np.log(np.linalg.norm(chi2[ind2,:]))
-    return d
-    #return 1.0/(chi1.shape[0]+chi2.shape[0]-len(intersect))*d
-            
-    
