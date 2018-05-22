@@ -50,13 +50,8 @@ def heat_diffusion(graph, taus=[1, 10, 25, 50], diff_type='heat',
 
     heat = np.zeros((len(taus), n_nodes, n_nodes))
 
-    def apply_heat(v):
-        f = np.zeros(n_nodes)
-        f[v] = 1
-        Sf_vec = Hk.analysis(f)    # creates the associated heat wavelets
-        Sf = Sf_vec.reshape((Sf_vec.size / len(taus), len(taus)), order='F')
-        return Sf
-    for v in range(n_nodes):
-        heat[:, :, v] = apply_heat(v).T   # stores in tensor the results
+    Sf_vec = Hk.analysis(np.eye(n_nodes))
+    for i in range(n_filters):
+        heat[i, :, :] = Sf_vec[i * n_nodes: (i + 1) * n_nodes, :]     # stores in tensor the results
 
     return heat, taus
