@@ -14,7 +14,6 @@ experiments described in the paper.
 + __distances/__: functions for computing distances between embeddings
 + files:
     + __characteristic\_functions.py__: functions for computing the characteristic functions.
-    + __heat_diffusion.py__: function for computing the heat kernel signatures.
     + __graphwave.py__: wrapper function for computing the embeddings.
 
 &nbsp;
@@ -26,14 +25,16 @@ experiments described in the paper.
 
 GraphWave was written for __Python 2.7__ and requires the installation of the following Python libraries:
 
-+ __pygsp__: module for computing the wavelets (from the  [EPFL website](https://pygsp.readthedocs.io/en/stable/)  ). 
-To install, simply run in your local terminal:
+
 + __networkx__: allows easy manipulation and plotting of graph objects (more information in the [Networkx website](https://networkx.github.io)).
 + __pyemd__: module for computing Earth Mover distances (for trying out other distances between diffusion distributions. More information in the [pyemd website](https://github.com/wmayner/pyemd))
 
-Can install these using `pip install -r requirements.txt`
 
-Also, need standard packages: __scipy, sklearn, seaborn__ for analyzing and plotting results
+
+Also, need standard packages: __scipy, sklearn, seaborn__ for analyzing and plotting results.
+
+Note: heat diffusion scaling wavelets can also be computed with the Graph Signal Processing toolbox  __pygsp__ (accessible through the  [EPFL website](https://pygsp.readthedocs.io/en/stable/)  ), which, beyond structural similarities, has plenty of extremely useful features for handling signals on graphs.
+
 
 
 
