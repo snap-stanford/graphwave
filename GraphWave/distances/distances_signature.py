@@ -12,10 +12,10 @@ import seaborn as sb
 from pyemd import emd
 
 import sys,os
-sys.path.append('../graphwave/')
-from graphwave.distances.distances_between_graphs import *
-from graphwave.utils.graph_tools import *
-from graphwave.characteristic_functions import *
+sys.path.append('../')
+from distances.distances_between_graphs import *
+from utils.graph_tools import *
+from characteristic_functions import *
 #### Set of functions for comparing graphs// lots of plotting options
 
 

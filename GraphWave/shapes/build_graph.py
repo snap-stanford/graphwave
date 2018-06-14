@@ -5,7 +5,7 @@ import math
 import networkx as nx
 import numpy as np
 from shapes import *
-from graphwave.utils.utils import *
+from utils.utils import *
 
 
 def build_structure(width_basis, basis_type, list_shapes, start=0,
@@ -47,13 +47,11 @@ def build_structure(width_basis, basis_type, list_shapes, start=0,
         role_id[p] += 1
 
     for shape_id, shape in enumerate(list_shapes):
-        print shape_id, shape
         shape_type = shape[0]
         args = [start]
         if len(shape)>1:
             args += shape[1:]
         args += [0]
-        print(args)
         graph_s, roles_graph_s = eval(shape_type)(*args)
         n_s = nx.number_of_nodes(graph_s)
         try:
@@ -67,7 +65,9 @@ def build_structure(width_basis, basis_type, list_shapes, start=0,
         basis.add_edges_from([(start, plugins[shape_id])])
         role_id[plugins[shape_id]] += (-2 - 10 * seen_shapes[shape_type][0])
         communities += [shape_id] * n_s
-        role_id += [r + col_start for r in roles_graph_s]
+        temp_labels = [r + col_start for r in roles_graph_s]
+        temp_labels[0] += 100 * seen_shapes[shape_type][0]
+        role_id += temp_labels
         start += n_s
 
     if add_random_edges > 0:

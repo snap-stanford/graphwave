@@ -11,15 +11,15 @@ import types
 import matplotlib.pyplot as plt
 import seaborn as sb
 import sys,os
+sys.path.append('../')
 
-from graphwave import shapes
-from graphwave.shapes import *
-from graphwave.heat_diffusion import *
-from graphwave.utils.graph_tools import *
-from graphwave.distances.distances_signature import *
+
+from shapes import *
+from   utils.graph_tools import *
+from distances.distances_signature import *
 from pyemd import emd
 import scipy as sc
-from graphwave.characteristic_functions import *
+from characteristic_functions import *
 
 
 def distances(chi1, chi2, type_comp='auc', taus=[1, 10, 25, 50],

@@ -6,17 +6,15 @@ import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
 import seaborn as sb
+import scipy as sc
 
-def laplacian(adj, norm=False):
-    n, _ = adj.shape
-    deg = np.diag([np.sum(adj[i, :]) for i in range(n)])
-    if norm == True:
-        deg = np.diag([1.0 / np.sqrt(np.sum(adj[i, :]) ) for i in range(n)])
-        lap = np.eye(n) - deg.dot(adj.dot(deg))
-    else:
-        deg = np.diag([np.sum(adj[i, :]) for i in range(n)])
-        lap = deg - adj
-    return lap
+
+def laplacian(a):
+        n_nodes, _ = a.shape
+        posinv = np.vectorize(lambda x: 1.0/np.sqrt(x) if x>1e-10 else 1)
+        d = sc.sparse.diags(np.array(posinv(a.sum(0))).reshape([-1,]),0)
+        lap = sc.sparse.eye(n_nodes) - d.dot(a.dot(d))
+        return lap
 
 
 def degree_matrix(adj):

@@ -11,42 +11,6 @@ import numpy as np
 import seaborn as sb
 
 
-def characteristic_function(sig, time_pnts, plot=False):
-    '''
-    function for computing the characteristic function
-    associated to a signal at a point/ set of points t:
-    $$   f(sig,t)=1/len(sig)* [sum_{s in sig} exp(i*t*s)] $$
-    INPUT:
-    ===========================================================================
-    sig           :      signal over the graph (vector of coefficients)
-    time_pnts     :      values at which the char. function should be evaluated
-    plot          :      boolean: should the resulting set
-                         of points be plotted?
-
-    OUTPUT:
-    ===========================================================================
-    f             :      empirical characteristic function. Array of
-                         size of len(t) * 3 (col1: t, col2: Re[phi(t)],
-                         col3: Im[phi(t)])
-    '''
-    time_pnts = list(time_pnts)
-    n_time_pnts = len(time_pnts)
-    f = np.zeros((n_time_pnts, 3))
-    f[0, :] = [0, 1, 0]
-    vec1 = np.array([np.exp(complex(0, sig[i])) for i in range(len(sig))])
-    for tt in range(1, n_time_pnts):
-        f[tt, 0] = time_pnts[tt]
-        vec = [x**time_pnts[tt] for x in vec1]
-        c = np.mean(vec)
-        f[tt, 1] = c.real
-        f[tt, 2] = c.imag
-    if plot is True:
-        plt.figure()
-        plt.plot(f[:, 1], f[:, 2])
-        plt.title('characteristic function of the distribution')
-    return f
-
-
 def plot_characteristic_function(phi_s, bunch, time_pnts, ind_tau):
     ''' simple function for plotting the variation that is induced
         INPUT:
@@ -59,7 +23,6 @@ def plot_characteristic_function(phi_s, bunch, time_pnts, ind_tau):
                      characteristic curves
         taus    :    list of scale values corresponding to phi_s
                      (corresponding input of chi_vary_scale)
-
         OUTPUT:
         ===========================================================================
         None
@@ -98,40 +61,27 @@ def plot_angle_chi(f, t=[], savefig=False, filefig='plots/angle_chi.png'):
     return theta
 
 
-def featurize_characteristic_function(heat_print, t=[], nodes=[]):
-    '''
-    same function as above, except the coefficient is computed across
-    all scales and concatenated in the feature vector
-    Parameters
-    ----------
-    heat_print
-    t          :         (optional) values where the curve is evaluated
-    nodes      :         (optional at  which nodes should the featurizations
-                         be computed (defaults to all)
+def charac_function(time_points, temp):
+    temp2 = temp.T.tolil()
+    d = temp2.data
+    n_timepnts = len(time_points)
+    n_nodes = temp.shape[1]
+    final_sig = np.zeros((2 * n_timepnts, n_nodes))
+    zeros_vec = np.array([1.0 / n_nodes*(n_nodes - len(d[i])) for i in range(n_nodes)])
+    for i in range(n_nodes):
+         final_sig[::2, i] = zeros_vec[i] +\
+                             1.0 / n_nodes *\
+                             np.cos(np.einsum("i,j-> ij",
+                                              time_points,
+                                              np.array(d[i]))).sum(1)
+    for it_t, t in enumerate(time_points):
+        final_sig[it_t * 2 + 1, :] = 1.0 / n_nodes * (temp.sin().sum(0))
 
-    Returns
-    -------
-    chi        :            feature matrix (pd DataFrame)
-    '''
-    n_filters, n_nodes, _ = heat_print.shape
-    if len(t) == 0:
-        t = range(0, 100, 5)
-        t += range(85, 100)
-        t.sort()
-        t = np.unique(t)
-        t = t.tolist()
-    n_time_pnts = len(t)
-    if len(nodes) == 0:
-        nodes = range(n_nodes)
-    chi = np.empty((n_nodes, 2 * n_time_pnts * n_filters))
-    for tau in range(n_filters):
-        sig = heat_print[tau, :, :]
-        for i in range(len(nodes)):
-            ind = nodes[i]
-            s = sig[:, ind].tolist()
-            c = characteristic_function(s, t, plot=False)
-            # Concatenate all the features into one big vector
-            index_update = range(tau * 2 * n_time_pnts,
-                                 (tau + 1) * 2 * n_time_pnts)
-            chi[i, index_update] = np.reshape(c[:, 1:], [1, 2 * n_time_pnts])
-    return chi
+    return final_sig
+
+
+def charac_function_multiscale(heat, time_points):
+    final_sig = []
+    for i in heat.keys():
+        final_sig.append(charac_function(time_points, heat[i]))
+    return np.vstack(final_sig).T
