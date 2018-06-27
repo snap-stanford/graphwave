@@ -60,7 +60,7 @@ computing by calling:
 ```
 >from graphwave import graphwave
 
->chi,heat_print, taus=graphwave(G, 'automatic', verbose=False)
+>chi,heat_print, taus=graphwave_alg(G, 'automatic', verbose=False)
 
 ```
 
