@@ -1,7 +1,6 @@
 # GraphWave
 ## Spectral Wavelets for learning structural signatures in complex networks
 
-__(Update: 10/31/17: this repository is in the process of being cleaned up and made more ''user-friendly'. While we are trying to make this cleaning process as fast as possible, we apologize for the broken modules paths and bugs in the meanwhile)__
 
 This folder contains the code for GraphWave, an algorithm for computing structural signatures for nodes in a network using heat spectral wavelets. 
 This code folder is organized as follows:
@@ -11,7 +10,6 @@ This code folder is organized as follows:
 + __test\_perturbation\_synthetic/__: set of ipython notebooks for running the synthetic
 experiments described in the paper.
 + __utils/__: set of  helper functions
-+ __distances/__: functions for computing distances between embeddings
 + files:
     + __characteristic\_functions.py__: functions for computing the characteristic functions.
     + __graphwave.py__: wrapper function for computing the embeddings.
