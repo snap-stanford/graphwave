@@ -46,16 +46,19 @@ def heat_diffusion_ind(graph, taus=TAUS, order = ORDER, proc = PROC):
     This method computes the heat diffusion waves for each of the nodes
     INPUT:
     -----------------------
-    graph    :    Graph, can be of type networkx or pygsp
-    taus     :    list of 4 scales for the wavelets. The higher the tau,
-                  the better the spread
+    graph    :    Graph (etworkx)
+    taus     :    list of scales for the wavelets. The higher the tau,
+                  the better the spread of the heat over the graph
     order    :    order of the polynomial approximation
+    proc     :    which procedure to compute the signatures (approximate == that
+                  is, with Chebychev approx -- or exact)
 
     OUTPUT:
     -----------------------
     heat     :     tensor of length  len(tau) x n_nodes x n_nodes
                    where heat[tau,:,u] is the wavelet for node u
                    at scale tau
+    taus     :     the associated scales
     '''
     # Compute Laplacian
     a = nx.adjacency_matrix(graph)
@@ -89,7 +92,7 @@ def graphwave_alg(graph, time_pnts, taus= 'auto',
     ''' wrapper function for computing the structural signatures using GraphWave
     INPUT
     --------------------------------------------------------------------------------------
-    graph             :   nx or pygsp Graph
+    graph             :   nx Graph
     time_pnts         :   time points at which to evaluate the characteristic function
     taus              :   list of scales that we are interested in. Alternatively,
                           'auto' for the automatic version of GraphWave
@@ -99,6 +102,7 @@ def graphwave_alg(graph, time_pnts, taus= 'auto',
                           computed?
     proc              :   which procedure to compute the signatures (approximate == that
                           is, with Chebychev approx -- or exact)
+    nb_filters        :   nuber of taus that we require if  taus=='auto'
     OUTPUT
     --------------------------------------------------------------------------------------
     chi               :  embedding of the function in Euclidean space
