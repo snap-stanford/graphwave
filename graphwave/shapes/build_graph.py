@@ -1,11 +1,12 @@
 '''Set of functions to construct a graph as a combination of
 smaller subgraphs (of aparticular shape, defined in the shapes.py file)
 '''
+import graphwave
 import math
 import networkx as nx
 import numpy as np
 from shapes import *
-from utils.utils import *
+from graphwave.utils.utils import *
 
 
 def build_structure(width_basis, basis_type, list_shapes, start=0,

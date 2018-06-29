@@ -69,13 +69,13 @@ def charac_function(time_points, temp):
     final_sig = np.zeros((2 * n_timepnts, n_nodes))
     zeros_vec = np.array([1.0 / n_nodes*(n_nodes - len(d[i])) for i in range(n_nodes)])
     for i in range(n_nodes):
-         final_sig[::2, i] = zeros_vec[i] +\
-                             1.0 / n_nodes *\
-                             np.cos(np.einsum("i,j-> ij",
-                                              time_points,
-                                              np.array(d[i]))).sum(1)
+        final_sig[::2, i] = zeros_vec[i] +\
+                            1.0 / n_nodes *\
+                            np.cos(np.einsum("i,j-> ij",
+                                             time_points,
+                                             np.array(d[i]))).sum(1)
     for it_t, t in enumerate(time_points):
-        final_sig[it_t * 2 + 1, :] = 1.0 / n_nodes * (temp.sin().sum(0))
+        final_sig[it_t * 2 + 1, :] = 1.0 / n_nodes * ((t*temp).sin().sum(0))
 
     return final_sig
 
