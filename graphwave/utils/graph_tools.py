@@ -11,7 +11,7 @@ import scipy as sc
 
 def laplacian(a):
         n_nodes, _ = a.shape
-        posinv = np.vectorize(lambda x: 1.0/np.sqrt(x) if x>1e-10 else 1)
+        posinv = np.vectorize(lambda x:  float(1.0)/np.sqrt(x) if x>1e-10 else 0.0)
         d = sc.sparse.diags(np.array(posinv(a.sum(0))).reshape([-1,]),0)
         lap = sc.sparse.eye(n_nodes) - d.dot(a.dot(d))
         return lap
